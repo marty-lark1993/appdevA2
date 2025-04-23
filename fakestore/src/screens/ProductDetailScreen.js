@@ -44,7 +44,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 export default ProductDetailScreen;
 
 const styles = StyleSheet.create({
-  container: {
+  container: { 
     padding: 20,
     backgroundColor: '#fff',
   },
