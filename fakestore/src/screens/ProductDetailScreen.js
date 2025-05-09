@@ -1,11 +1,18 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../store/cartSlice';
 
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { product } = route.params;
-  console.log(product.image)
+  const dispatch = useDispatch()
+
+  const handleAddToCart = () => {
+    dispatch(addToCart(product))
+    alert(`added to cart`)
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -25,7 +32,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => alert('Add to Cart functionality coming soon!')}
+        onPress={handleAddToCart}
       >
         <Ionicons name='cart-outline' size={24} color="white" />
         <Text style={styles.buttonText}>    Add to Shopping Cart</Text>
