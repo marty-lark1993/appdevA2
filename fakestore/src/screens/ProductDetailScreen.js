@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
+import { uploadCart } from '../store/cartSlice';
 
 
 const ProductDetailScreen = ({ route, navigation }) => {
@@ -11,6 +12,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const handleAddToCart = () => {
     dispatch(addToCart(product))
+    dispatch(uploadCart())
     alert(`added to cart`)
   }
 

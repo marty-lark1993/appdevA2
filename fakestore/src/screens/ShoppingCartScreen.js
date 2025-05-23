@@ -1,50 +1,102 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FlatList, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { increaseQuantity, decreaseQuantity, removeFromCart } from '../store/cartSlice';
+import { increaseQuantity, decreaseQuantity, removeFromCart, clearCart, uploadCart } from '../store/cartSlice';
+import { fetchOrders, incrementNewOrders } from '../store/orderSlice';
+import { selectCurrentUser } from '../store/userSlice';
 
 const ShoppingCartScreen = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
+  const user = useSelector(selectCurrentUser);
 
   const totalCost = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
-  const renderCartItem = ({ item }) => (
-    <View style={styles.cartItem}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.price}>${item.price.toFixed(2)}</Text>
 
-      <View style={styles.quantityControl}>
+  const handleCheckout = async () => {
+    const itemsToSend = cartItems.map(item => ({
+      prodID: item.id,
+      price: item.price,
+      quantity: item.quantity,
+      title: item.title,
+      image: item.image
+    }));
+  
+    try {
+      const res = await fetch('http://192.168.1.112:3000/orders/neworder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ items: itemsToSend }),
+      });
+  
+      const data = await res.json();
+      console.log(data)
+      if (data.status === 'OK') {
+        dispatch(clearCart());
+        dispatch(incrementNewOrders());
+        dispatch(fetchOrders())
+        alert('Order placed successfully!');
+      } else {
+        alert('Order failed. Try again.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Server error. Try again later.');
+    }
+  };
+
+  const renderCartItem = ({ item }) => {
+    const handleRemove = () => {
+      dispatch(removeFromCart(item));
+      dispatch(uploadCart());
+    };
+  
+    return (
+      <View style={styles.cartItem}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+  
+        <View style={styles.quantityControl}>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => {
+              if (item.quantity === 1) {
+                handleRemove();
+              } else {
+                dispatch(decreaseQuantity(item));
+                dispatch(uploadCart());
+              }
+            }}
+          >
+            <Text style={styles.quantityButtonText}>−</Text>
+          </TouchableOpacity>
+  
+          <Text style={styles.quantityText}>{item.quantity}</Text>
+  
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => {
+              dispatch(increaseQuantity(item));
+              dispatch(uploadCart());
+            }}
+          >
+            <Text style={styles.quantityButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+  
         <TouchableOpacity
-          style={styles.quantityButton}
-          onPress={() => {
-            if(item.quantity === 1){
-              dispatch(removeFromCart(item))
-            } else{
-            dispatch(decreaseQuantity(item))}}
-          }
+          style={styles.removeButton}
+          onPress={handleRemove} // ✅ Now it's a function reference
         >
-          <Text style={styles.quantityButtonText}>−</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.quantityText}>{item.quantity}</Text>
-
-        <TouchableOpacity
-          style={styles.quantityButton}
-          onPress={() => dispatch(increaseQuantity(item))}
-        >
-          <Text style={styles.quantityButtonText}>+</Text>
+          <Text style={styles.removeButtonText}>Remove</Text>
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => dispatch(removeFromCart(item))}
-      >
-        <Text style={styles.removeButtonText}>Remove</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
+  
 
   return (
     <View style={styles.container}>
@@ -64,6 +116,11 @@ const ShoppingCartScreen = () => {
           Total Items: {cartItems.reduce((total, item) => total + item.quantity, 0)}
         </Text>
       </View>
+      {cartItems.length > 0 && (
+        <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
+           <Text style={styles.checkoutButtonText}>Check Out</Text>
+        </TouchableOpacity>
+)}
     </View>
   );
 };
@@ -149,6 +206,18 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  checkoutButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  checkoutButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },  
 });
 
 export default ShoppingCartScreen;
